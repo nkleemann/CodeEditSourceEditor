@@ -25,7 +25,7 @@ public class TextViewController: NSViewController {
     weak var findViewController: FindViewController?
 
     var scrollView: NSScrollView!
-    var textView: TextView!
+    public var textView: TextView!
     var gutterView: GutterView!
     var minimapView: MinimapView!
 
