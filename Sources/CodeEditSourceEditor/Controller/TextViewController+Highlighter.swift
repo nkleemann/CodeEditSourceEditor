@@ -9,7 +9,7 @@ import Foundation
 import SwiftTreeSitter
 
 extension TextViewController {
-    package func setUpHighlighter() {
+    public func setUpHighlighter() {
         if let highlighter {
             textView.removeStorageDelegate(highlighter)
             self.highlighter = nil
