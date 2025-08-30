@@ -9,7 +9,7 @@ import AppKit
 import SwiftUI
 
 struct CodeSuggestionLabelView: View {
-    static let HORIZONTAL_PADDING: CGFloat = 13
+    static let HORIZONTAL_PADDING: CGFloat = 11
 
     let suggestion: CodeSuggestionEntry
     let labelColor: NSColor
@@ -19,11 +19,8 @@ struct CodeSuggestionLabelView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 2) {
             suggestion.image
-                .font(.system(size: font.pointSize + 2))
-                .foregroundStyle(
-                    .white,
-                    suggestion.deprecated ? .gray : suggestion.imageColor
-                )
+                .foregroundStyle(Color.gray.opacity(0.6), suggestion.deprecated ? .gray.opacity(0.3) : suggestion.imageColor)
+                .frame(width: 18) //+ vertically center all
 
             // Main label
             HStack(spacing: font.charWidth) {
@@ -35,17 +32,17 @@ struct CodeSuggestionLabelView: View {
                         .foregroundStyle(Color(secondaryLabelColor))
                 }
             }
-            .font(Font(font))
 
             Spacer(minLength: 0)
 
             // Right side indicators
             if suggestion.deprecated {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: font.pointSize + 2))
                     .foregroundStyle(Color(labelColor), Color(secondaryLabelColor))
             }
         }
+        //+ shrink font slightly
+        .font(Font(font.withSize(font.pointSize * 0.95)))
         .padding(.vertical, 3)
         .padding(.horizontal, Self.HORIZONTAL_PADDING)
         .buttonStyle(PlainButtonStyle())

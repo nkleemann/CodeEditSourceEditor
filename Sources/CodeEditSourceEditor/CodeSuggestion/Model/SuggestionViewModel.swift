@@ -115,9 +115,11 @@ final class SuggestionViewModel: ObservableObject {
     }
 
     func syntaxHighlights(forIndex index: Int) -> NSAttributedString? {
-        if let cached = syntaxHighlightedCache[index] {
-            return cached
-        }
+        
+        //+ remove temp. because we redefine suggestion items often 
+//        if let cached = syntaxHighlightedCache[index] {
+//            return cached
+//        }
 
         if let sourcePreview = items[index].sourcePreview,
            let theme = activeTextView?.theme,

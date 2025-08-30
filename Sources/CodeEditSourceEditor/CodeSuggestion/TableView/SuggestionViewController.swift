@@ -39,13 +39,14 @@ class SuggestionViewController: NSViewController {
 
     override func loadView() {
         super.loadView()
+        
         view.wantsLayer = true
-        view.layer?.cornerRadius = 8.5
+        view.layer?.cornerRadius = 7.0
         view.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
 
         tintView.translatesAutoresizingMaskIntoConstraints = false
         tintView.wantsLayer = true
-        tintView.layer?.cornerRadius = 8.5
+        tintView.layer?.cornerRadius = 7.0
         tintView.layer?.backgroundColor = .clear
         view.addSubview(tintView)
 
@@ -56,7 +57,6 @@ class SuggestionViewController: NSViewController {
         noItemsLabel.alignment = .center
         noItemsLabel.translatesAutoresizingMaskIntoConstraints = false
         noItemsLabel.isHidden = false
-
         previewView.translatesAutoresizingMaskIntoConstraints = false
 
         view.addSubview(noItemsLabel)
@@ -92,6 +92,8 @@ class SuggestionViewController: NSViewController {
             styleView(using: controller)
         }
         setupEventMonitors()
+        
+        previewView.activeTheme = model?.activeTextView?.theme
     }
 
     override func viewWillDisappear() {
@@ -141,34 +143,31 @@ class SuggestionViewController: NSViewController {
     }
 
     func styleView(using controller: TextViewController) {
-        noItemsLabel.font = controller.font
-        previewView.font = controller.font
-        previewView.documentationFont = controller.font
-        switch controller.systemAppearance {
-        case .aqua:
-            let color = controller.theme.background
-            if color != .clear {
-                let newColor = NSColor(
-                    red: color.redComponent * 0.95,
-                    green: color.greenComponent * 0.95,
-                    blue: color.blueComponent * 0.95,
-                    alpha: 1.0
-                )
-                tintView.layer?.backgroundColor = newColor.cgColor
-            } else {
-                tintView.layer?.backgroundColor = .clear
-            }
-        case .darkAqua:
-            tintView.layer?.backgroundColor = controller.theme.background.cgColor
-        default:
-            return
+        // Slightly smaller fonts overall
+        noItemsLabel.font = NSFont.systemFont(ofSize: max(10, controller.font.pointSize - 1))
+        previewView.font = NSFont.systemFont(ofSize: max(10, controller.font.pointSize - 1))
+        previewView.documentationFont = NSFont.systemFont(ofSize: max(10, controller.font.pointSize - 1))
+        
+        //+ hardcode bg color
+        let color = controller.theme.background
+        if color != .clear {
+            let newColor = NSColor(
+                red: color.redComponent * 0.95,
+                green: color.greenComponent * 0.95,
+                blue: color.blueComponent * 0.95,
+                alpha: 1.0
+            )
+            tintView.layer?.backgroundColor = newColor.cgColor
+        } else {
+            tintView.layer?.backgroundColor = .clear
         }
+        
         updateSize(using: controller)
     }
 
     func updateSize(using controller: TextViewController?) {
         guard model?.items.isEmpty == false && tableView.numberOfRows > 0 else {
-            let size = NSSize(width: 256, height: noItemsLabel.fittingSize.height + 20)
+            let size = NSSize(width: 240, height: noItemsLabel.fittingSize.height + 18)
             preferredContentSize = size
             windowController?.updateWindowSize(newSize: size)
             return
@@ -318,7 +317,7 @@ extension SuggestionViewController: NSTableViewDataSource, NSTableViewDelegate {
 
     public func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
         CodeSuggestionRowView { [weak self] in
-            self?.model?.activeTextView?.theme.background ?? NSColor.controlBackgroundColor
+            self?.model?.activeTextView?.theme.text.color.withAlphaComponent(0.07) ?? NSColor.blue.withAlphaComponent(0.2)
         }
     }
 
@@ -332,7 +331,7 @@ extension SuggestionViewController: NSTableViewDataSource, NSTableViewDelegate {
         if let model {
             // Update our preview view
             let selectedItem = model.items[tableView.selectedRow]
-
+            
             previewView.sourcePreview = model.syntaxHighlights(forIndex: tableView.selectedRow)
             previewView.documentation = selectedItem.documentation
             previewView.pathComponents = selectedItem.pathComponents ?? []

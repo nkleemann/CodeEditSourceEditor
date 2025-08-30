@@ -9,7 +9,13 @@ import SwiftUI
 
 final class CodeSuggestionPreviewView: NSVisualEffectView {
     private let spacing: CGFloat = 5
-
+    
+    var activeTheme: EditorTheme? {
+        didSet {
+            applyThemeColors()
+        }
+    }
+    
     var sourcePreview: NSAttributedString? {
         didSet {
             sourcePreviewLabel.attributedStringValue = sourcePreview ?? NSAttributedString(string: "")
@@ -36,13 +42,13 @@ final class CodeSuggestionPreviewView: NSVisualEffectView {
         }
     }
 
-    var font: NSFont = .systemFont(ofSize: 12) {
+    var font: NSFont = .systemFont(ofSize: 11) {
         didSet {
             sourcePreviewLabel.font = font
             pathComponentsLabel.font = .systemFont(ofSize: font.pointSize)
         }
     }
-    var documentationFont: NSFont = .systemFont(ofSize: 12) {
+    var documentationFont: NSFont = .systemFont(ofSize: 11) {
         didSet {
             documentationLabel.font = documentationFont
         }
@@ -50,12 +56,26 @@ final class CodeSuggestionPreviewView: NSVisualEffectView {
 
     var stackView: NSStackView = NSStackView()
     var dividerView: NSView = NSView()
+    var backgroundOverlayView: NSView = NSView()
     var sourcePreviewLabel: NSTextField = NSTextField()
     var documentationLabel: NSTextField = NSTextField()
     var pathComponentsLabel: NSTextField = NSTextField()
 
+    convenience init(theme: EditorTheme?) {
+        self.init()
+        self.activeTheme = theme
+        applyThemeColors()
+    }
+
     init() {
         super.init(frame: .zero)
+
+        //+ giving a tint to the bg overlay
+        backgroundOverlayView.translatesAutoresizingMaskIntoConstraints = false
+        backgroundOverlayView.wantsLayer = true
+        backgroundOverlayView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        addSubview(backgroundOverlayView)
+
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.spacing = spacing
         stackView.orientation = .vertical
@@ -69,7 +89,7 @@ final class CodeSuggestionPreviewView: NSVisualEffectView {
         dividerView.layer?.backgroundColor = NSColor.separatorColor.cgColor
         addSubview(dividerView)
 
-        self.material = .windowBackground
+        self.material = .hudWindow
         self.blendingMode = .behindWindow
 
         styleStaticLabel(sourcePreviewLabel)
@@ -85,6 +105,11 @@ final class CodeSuggestionPreviewView: NSVisualEffectView {
         stackView.addArrangedSubview(pathComponentsLabel)
 
         NSLayoutConstraint.activate([
+            backgroundOverlayView.topAnchor.constraint(equalTo: topAnchor),
+            backgroundOverlayView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            backgroundOverlayView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            backgroundOverlayView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
             dividerView.topAnchor.constraint(equalTo: topAnchor),
             dividerView.leadingAnchor.constraint(equalTo: leadingAnchor),
             dividerView.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -92,9 +117,11 @@ final class CodeSuggestionPreviewView: NSVisualEffectView {
 
             stackView.topAnchor.constraint(equalTo: dividerView.bottomAnchor, constant: spacing),
             stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -SuggestionController.WINDOW_PADDING),
-            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 13),
-            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -13)
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 11),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -11)
         ])
+
+        applyThemeColors()
     }
 
     required init?(coder: NSCoder) {
@@ -127,7 +154,7 @@ final class CodeSuggestionPreviewView: NSVisualEffectView {
         let folder = NSTextAttachment()
         folder.image = NSImage(systemSymbolName: "folder.fill", accessibilityDescription: nil)?
             .withSymbolConfiguration(
-                .init(paletteColors: [NSColor.systemBlue]).applying(.init(pointSize: font.pointSize, weight: .regular))
+                .init(paletteColors: [NSColor.systemBlue]).applying(.init(pointSize: max(9, font.pointSize - 1), weight: .regular))
             )
 
         let string: NSMutableAttributedString = NSMutableAttributedString(attachment: folder)
@@ -137,7 +164,7 @@ final class CodeSuggestionPreviewView: NSVisualEffectView {
         separator.image = NSImage(systemSymbolName: "chevron.compact.right", accessibilityDescription: nil)?
             .withSymbolConfiguration(
                 .init(paletteColors: [NSColor.labelColor])
-                .applying(.init(pointSize: font.pointSize + 1, weight: .regular))
+                .applying(.init(pointSize: max(9, font.pointSize), weight: .regular))
             )
 
         for (idx, component) in pathComponents.enumerated() {
@@ -165,5 +192,26 @@ final class CodeSuggestionPreviewView: NSVisualEffectView {
         }
 
         pathComponentsLabel.attributedStringValue = string
+    }
+
+    private func applyThemeColors() {
+        //+ apply bg tint
+        guard let themeBackground = activeTheme?.background else { return }
+        if themeBackground != .clear {
+            let newColor = NSColor(
+                red: themeBackground.redComponent * 0.95,
+                green: themeBackground.greenComponent * 0.95,
+                blue: themeBackground.blueComponent * 0.95,
+                alpha: 0.9
+            )
+            backgroundOverlayView.layer?.backgroundColor = newColor.cgColor
+        } else {
+            backgroundOverlayView.layer?.backgroundColor = .clear
+        }
+        
+        //+ apply fg label color
+        guard let themeTextColor = activeTheme?.text.color else { return }
+        sourcePreviewLabel.textColor = themeTextColor
+        documentationLabel.textColor = themeTextColor
     }
 }

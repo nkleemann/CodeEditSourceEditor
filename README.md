@@ -1,3 +1,12 @@
+This fork contains changes to make CESE play nice with ![My live coding editor](https://25midi.com/projects/tidalconduit.html). Planned changes:
+
+- Hardcoded design choices
+- [Sparklines](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)
+- [Musical annotations](https://charlieroberts.github.io/annotationsAndVisualizations/)
+- [Parameter editing Widgets](https://thebookofshaders.com/edit.php) 
+
+---
+
 <p align="center">
   <img src="https://github.com/CodeEditApp/CodeEditTextView/blob/main/.github/CodeEditSourceEditor-Icon-128@2x.png?raw=true" height="128">
   <h1 align="center">CodeEditSourceEditor</h1>
