@@ -10,16 +10,16 @@ import CodeEditTextView
 import Combine
 
 public final class SuggestionController: NSWindowController {
-    static var shared: SuggestionController = SuggestionController()
+    public static var shared: SuggestionController = SuggestionController()
 
     // MARK: - Properties
 
     /// Whether the suggestion window is visible
-    var isVisible: Bool {
+    public var isVisible: Bool {
         window?.isVisible ?? false || popover?.isShown ?? false
     }
 
-    var model: SuggestionViewModel = SuggestionViewModel()
+    public var model: SuggestionViewModel = SuggestionViewModel()
 
     // MARK: - Private Properties
 
@@ -29,12 +29,13 @@ public final class SuggestionController: NSWindowController {
     static let WINDOW_PADDING: CGFloat = 5
 
     /// Tracks when the window is placed above the cursor
-    var isWindowAboveCursor = false
+    public var isWindowAboveCursor = false
 
-    var popover: NSPopover?
+    public var popover: NSPopover?
 
     /// Holds the observer for the window resign notifications
-    private var windowResignObserver: NSObjectProtocol?
+    public var windowResignObserver: NSObjectProtocol?
+
 
     // MARK: - Initialization
 
@@ -52,6 +53,8 @@ public final class SuggestionController: NSWindowController {
         if window.isVisible {
             window.close()
         }
+
+        
     }
 
     required init?(coder: NSCoder) {
@@ -66,11 +69,13 @@ public final class SuggestionController: NSWindowController {
         cursorPosition: CursorPosition,
         asPopover: Bool = false
     ) {
+        
         model.showCompletions(
             textView: textView,
             delegate: delegate,
             cursorPosition: cursorPosition
         ) { parentWindow, cursorRect in
+            
             if asPopover {
                 self.popover?.close()
                 self.popover = nil
@@ -102,8 +107,28 @@ public final class SuggestionController: NSWindowController {
 
     /// Opens the window as a child of another window.
     public func showWindow(attachedTo parentWindow: NSWindow) {
+        //+ hotfix hidden suggestion window
+        // recreate window and content controller if missing
+        if window == nil || window?.contentViewController == nil || !(window?.contentViewController is SuggestionViewController) {
+            let newWindow = Self.makeWindow()
+            let controller = SuggestionViewController()
+            controller.model = model
+            controller.windowController = self
+            newWindow.contentViewController = controller
+            self.window = newWindow
+        }
+
         guard let window = window else { return }
+
+        //+ hotfix hidden suggestion window
+        // detach from previous parent to avoid stale child relationship
+        if let existingParent = window.parent, existingParent !== parentWindow {
+            existingParent.removeChildWindow(window)
+        }
+
+        // Attach to the requested parent
         parentWindow.addChildWindow(window, ordered: .above)
+        
 
         // Close on window switch observer
         // Initialized outside of `setupEventMonitors` in order to grab the parent window
@@ -120,6 +145,9 @@ public final class SuggestionController: NSWindowController {
 
         super.showWindow(nil)
         window.orderFront(nil)
+
+        
+
         window.contentViewController?.viewWillAppear()
     }
 
@@ -132,6 +160,18 @@ public final class SuggestionController: NSWindowController {
             popover = nil
         } else {
             contentViewController?.viewWillDisappear()
+        }
+
+        //+ hotfix hidden suggestion window
+        // clean up observer and detach from parent to prevent stuck hidden window
+        if let existingObserver = windowResignObserver {
+            NotificationCenter.default.removeObserver(existingObserver)
+            windowResignObserver = nil
+        }
+
+        // Detach from parent to avoid stale child relationships
+        if let window, let parent = window.parent {
+            parent.removeChildWindow(window)
         }
 
         super.close()

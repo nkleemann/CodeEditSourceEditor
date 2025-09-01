@@ -94,6 +94,7 @@ class SuggestionViewController: NSViewController {
         setupEventMonitors()
         
         previewView.activeTheme = model?.activeTextView?.theme
+        
     }
 
     override func viewWillDisappear() {
@@ -263,6 +264,7 @@ class SuggestionViewController: NSViewController {
         if let activeTextView = model?.activeTextView {
             updateSize(using: activeTextView)
         }
+        
     }
 
     @objc private func tableViewClicked(_ sender: Any?) {
@@ -340,6 +342,7 @@ extension SuggestionViewController: NSTableViewDataSource, NSTableViewDelegate {
             updateSize(using: nil)
 
             model.didSelect(item: selectedItem)
+            
         }
     }
 }

@@ -10,10 +10,11 @@ import AppKit
 extension SuggestionController {
     /// Will constrain the window's frame to be within the visible screen
     public func constrainWindowToScreenEdges(cursorRect: NSRect, font: NSFont) {
-        guard let window = self.window,
-              let screenFrame = window.screen?.visibleFrame else {
-            return
-        }
+        guard let window = self.window else { return }
+
+        // Determine the best screen to use: window.screen first, then by cursorRect, then main
+        let bestScreen: NSScreen? = window.screen ?? NSScreen.screens.first(where: { $0.visibleFrame.contains(cursorRect.origin) }) ?? NSScreen.main
+        guard let screenFrame = bestScreen?.visibleFrame else { return }
 
         let windowSize = window.frame.size
         let padding: CGFloat = 22
@@ -22,6 +23,12 @@ extension SuggestionController {
             - CodeSuggestionLabelView.HORIZONTAL_PADDING - font.pointSize,
             y: cursorRect.origin.y
         )
+
+        // If the window has a zero size (first show), give it a sensible default before positioning
+        if windowSize.width <= 1 || windowSize.height <= 1 {
+            let defaultSize = NSSize(width: 300, height: 200)
+            window.setContentSize(defaultSize)
+        }
 
         // Keep the horizontal position within the screen and some padding
         let minX = screenFrame.minX + padding
@@ -36,7 +43,7 @@ extension SuggestionController {
         // Check if the window will go below the screen
         // We determine whether the window drops down or upwards by choosing which
         // corner of the window we will position: `setFrameOrigin` or `setFrameTopLeftPoint`
-        if newWindowOrigin.y - windowSize.height < screenFrame.minY {
+        if newWindowOrigin.y - window.frame.size.height < screenFrame.minY {
             // If the cursor itself is below the screen, then position the window
             // at the bottom of the screen with some padding
             if newWindowOrigin.y < screenFrame.minY {
@@ -58,6 +65,8 @@ extension SuggestionController {
             isWindowAboveCursor = false
             window.setFrameTopLeftPoint(newWindowOrigin)
         }
+
+        
     }
 
     func updateWindowSize(newSize: NSSize) {
@@ -69,14 +78,23 @@ extension SuggestionController {
         guard let window else { return }
         let oldFrame = window.frame
 
-        window.minSize = newSize
-        window.maxSize = NSSize(width: CGFloat.infinity, height: newSize.height)
+        // Sanity check for size
+        var saneSize = newSize
+        if !saneSize.width.isFinite || !saneSize.height.isFinite || saneSize.width < 50 || saneSize.height < 30 {
+            saneSize = NSSize(width: max(50, saneSize.width.isFinite ? saneSize.width : 300),
+                              height: max(30, saneSize.height.isFinite ? saneSize.height : 200))
+        }
 
-        window.setContentSize(newSize)
+        window.minSize = saneSize
+        window.maxSize = NSSize(width: CGFloat.infinity, height: saneSize.height)
 
-        if isWindowAboveCursor && oldFrame.size.height != newSize.height {
+        window.setContentSize(saneSize)
+
+        if isWindowAboveCursor && oldFrame.size.height != saneSize.height {
             window.setFrameOrigin(oldFrame.origin)
         }
+
+        
     }
 
     // MARK: - Private Methods
@@ -99,6 +117,9 @@ extension SuggestionController {
         window.tabbingMode = .disallowed
         window.hidesOnDeactivate = true
         window.backgroundColor = .clear
+
+        // Ensure the window doesn't intercept key status but remains visible
+        window.isMovableByWindowBackground = false
 
         return window
     }

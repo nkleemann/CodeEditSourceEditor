@@ -8,7 +8,7 @@
 import AppKit
 
 @MainActor
-final class SuggestionViewModel: ObservableObject {
+public final class SuggestionViewModel: ObservableObject {
     /// The items to be displayed in the window
     @Published var items: [CodeSuggestionEntry] = []
     var itemsRequestTask: Task<Void, Never>?
@@ -40,9 +40,7 @@ final class SuggestionViewModel: ObservableObject {
                 guard let completionItems = await delegate.completionSuggestionsRequested(
                     textView: textView,
                     cursorPosition: cursorPosition
-                ) else {
-                    return
-                }
+                ) else { return }
 
                 try Task.checkCancellation()
                 try await MainActor.run {
@@ -54,9 +52,7 @@ final class SuggestionViewModel: ObservableObject {
                           ),
                           let cursorRect = textView.view.window?.convertToScreen(
                             textView.textView.convert(cursorRect, to: nil)
-                          ) else {
-                        return
-                    }
+                          ) else { return }
 
                     self.items = completionItems.items
                     self.syntaxHighlightedCache = [:]
